@@ -3,7 +3,10 @@ import { createRequire } from 'module';
 import dotenv from "dotenv";
 
 const require = createRequire(import.meta.url);
-const Brevo = require('@getbrevo/brevo');
+const brevoModule = require('@getbrevo/brevo');
+
+// This is the critical fix: Handle the .default wrapping
+const Brevo = brevoModule.default || brevoModule;
 
 dotenv.config();
 
