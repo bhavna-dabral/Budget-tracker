@@ -1,0 +1,6 @@
+{
+  "root": "build",
+  "routes": [
+    { "source": "/**", "destination": "/index.html" }
+  ]
+}
