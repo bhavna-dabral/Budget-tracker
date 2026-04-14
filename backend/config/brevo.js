@@ -1,15 +1,18 @@
 // backend/config/brevo.js
-import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } from "@getbrevo/brevo";
+import pkg from "@getbrevo/brevo";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// Initialize the API instance directly from the named export
+// Destructure the needed classes from the default package export
+const { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } = pkg;
+
+// Initialize the API instance
 const apiInstance = new TransactionalEmailsApi();
 
 // Set the API Key
 apiInstance.setApiKey(
-  TransactionalEmailsApiApiKeys.apiKey, 
+  TransactionalEmailsApiApiKeys.apiKey,
   process.env.BREVO_API_KEY
 );
 
@@ -17,8 +20,6 @@ export const sendEmail = async (to, subject, htmlContent) => {
   try {
     const senderEmail = process.env.SENDER_EMAIL || "no-reply@example.com";
 
-    // Use a plain object for the email data - the SDK accepts this 
-    // and it avoids class constructor issues entirely.
     const sendSmtpEmail = {
       subject: subject,
       htmlContent: htmlContent,
