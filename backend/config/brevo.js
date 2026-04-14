@@ -3,10 +3,11 @@ import { createRequire } from 'module';
 import dotenv from "dotenv";
 
 const require = createRequire(import.meta.url);
-const brevoModule = require('@getbrevo/brevo');
+const rawBrevo = require('@getbrevo/brevo');
 
-// This is the critical fix: Handle the .default wrapping
-const Brevo = brevoModule.default || brevoModule;
+// This line ensures we get the actual library, 
+// whether Node wraps it in .default or not.
+const Brevo = rawBrevo.default || rawBrevo;
 
 dotenv.config();
 
