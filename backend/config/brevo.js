@@ -1,15 +1,15 @@
 // backend/config/brevo.js
-import * as SibApiV3Sdk from "@getbrevo/brevo"; // Use * as SibApiV3Sdk
+import { TransactionalEmailsApi, SendSmtpEmail, TransactionalEmailsApiApiKeys } from "@getbrevo/brevo";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// Create the API instance
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+// Initialize the API instance
+const apiInstance = new TransactionalEmailsApi();
 
 // Set the API Key
 apiInstance.setApiKey(
-  SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+  TransactionalEmailsApiApiKeys.apiKey,
   process.env.BREVO_API_KEY
 );
 
@@ -17,7 +17,7 @@ export const sendEmail = async (to, subject, htmlContent) => {
   try {
     const senderEmail = process.env.SENDER_EMAIL || "no-reply@example.com";
 
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail(); // Use the class constructor
+    const sendSmtpEmail = new SendSmtpEmail();
 
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = htmlContent;
