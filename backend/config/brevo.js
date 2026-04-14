@@ -1,18 +1,18 @@
 // backend/config/brevo.js
-import pkg from "@getbrevo/brevo";
+import { createRequire } from 'module';
 import dotenv from "dotenv";
+
+const require = createRequire(import.meta.url);
+const Brevo = require('@getbrevo/brevo');
 
 dotenv.config();
 
-// Destructure the needed classes from the default package export
-const { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } = pkg;
-
 // Initialize the API instance
-const apiInstance = new TransactionalEmailsApi();
+const apiInstance = new Brevo.TransactionalEmailsApi();
 
 // Set the API Key
 apiInstance.setApiKey(
-  TransactionalEmailsApiApiKeys.apiKey,
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
   process.env.BREVO_API_KEY
 );
 
