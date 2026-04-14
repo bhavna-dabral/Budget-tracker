@@ -26,36 +26,40 @@ ChartJS.register(
   Legend
 );
 
-/**
- * Chart.jsx
- * - Accepts date formats: "dd-mm-yyyy" OR ISO "yyyy-mm-dd"
- * - Year selector (derived from data)
- * - Monthly mixed chart (Income line + Expense bars) for selected year
- * - Year-to-year grouped bar comparison
- * - Totals under chart: total income, total expense, savings, wallet (all-time)
- * - Monthly & Yearly warning comparisons
- * - Overspent months list (expense > income)
- */
+/* --- Helpers moved OUTSIDE to satisfy ESLint --- */
+
+const months = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+const parseDate = (d) => {
+  if (!d) return new Date("");
+  if (d instanceof Date) return d;
+  if (typeof d === "string" && /^\d{1,2}-\d{1,2}-\d{4}$/.test(d.trim())) {
+    const [dd, mm, yyyy] = d.trim().split("-").map((s) => Number(s));
+    return new Date(yyyy, mm - 1, dd);
+  }
+  return new Date(d);
+};
+
+const monthlySums = (items, year) => {
+  const arr = Array(12).fill(0);
+  items.forEach((it) => {
+    const dt = parseDate(it.date);
+    if (!isNaN(dt) && dt.getFullYear() === year) {
+      arr[dt.getMonth()] += Number(it.amount || 0);
+    }
+  });
+  return arr;
+};
+
+/* --- Component --- */
 
 function Chart() {
   const { incomes = [], expenses = [] } = useGlobalContext();
 
-  // Helper parse: supports "dd-mm-yyyy" and ISO
-  const parseDate = (d) => {
-    if (!d) return new Date("");
-    if (d instanceof Date) return d;
-    // if string contains '-' and format dd-mm-yyyy (day first)
-    if (typeof d === "string" && /^\d{1,2}-\d{1,2}-\d{4}$/.test(d.trim())) {
-      const [dd, mm, yyyy] = d.trim().split("-").map((s) => Number(s));
-      // JS Date months are 0-based
-      return new Date(yyyy, mm - 1, dd);
-    }
-    // fallback to Date parse for ISO or other formats
-    const parsed = new Date(d);
-    return parsed;
-  };
-
-  // derive available years from both incomes and expenses
+  // derive available years
   const availableYears = useMemo(() => {
     const years = new Set();
     incomes.forEach((it) => {
@@ -67,7 +71,7 @@ function Chart() {
       if (!isNaN(dt)) years.add(dt.getFullYear());
     });
     if (years.size === 0) years.add(new Date().getFullYear());
-    return Array.from(years).sort((a, b) => b - a); // newest first
+    return Array.from(years).sort((a, b) => b - a);
   }, [incomes, expenses]);
 
   const [selectedYear, setSelectedYear] = useState(
@@ -80,49 +84,26 @@ function Chart() {
     }
   }, [availableYears, selectedYear]);
 
-  const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
-  ];
-
-  // Utility to sum amounts per month for a given year
-  const monthlySums = (items, year) => {
-    const arr = Array(12).fill(0);
-    items.forEach((it) => {
-      const dt = parseDate(it.date);
-      if (!isNaN(dt) && dt.getFullYear() === year) {
-        arr[dt.getMonth()] += Number(it.amount || 0);
-      }
-    });
-    return arr;
-  };
-
-  // Build all derived metrics memoized
+  // Build all derived metrics
   const derived = useMemo(() => {
-    // monthly arrays for selected year
     const monthlyIncome = monthlySums(incomes, selectedYear);
     const monthlyExpense = monthlySums(expenses, selectedYear);
 
-    // totals for selected year
     const totalIncomeYear = monthlyIncome.reduce((s, v) => s + v, 0);
     const totalExpenseYear = monthlyExpense.reduce((s, v) => s + v, 0);
     const totalSavingsYear = totalIncomeYear - totalExpenseYear;
 
-    // wallet = all-time income - all-time expense
     const allIncome = incomes.reduce((s, it) => s + Number(it.amount || 0), 0);
     const allExpense = expenses.reduce((s, it) => s + Number(it.amount || 0), 0);
     const walletAllTime = allIncome - allExpense;
 
-    // overspent months (expense > income)
     const overspentMonths = months.filter((m, i) => monthlyExpense[i] > monthlyIncome[i]);
 
-    // last populated month index for selected year (latest month with any transaction)
     let lastMonthIndex = -1;
     for (let i = 11; i >= 0; i--) {
       if (monthlyIncome[i] + monthlyExpense[i] > 0) { lastMonthIndex = i; break; }
     }
 
-    // monthly warning: compare last populated month expense vs previous month expense in same year
     let monthlyWarning = null;
     if (lastMonthIndex > 0) {
       const lastExp = monthlyExpense[lastMonthIndex];
@@ -139,7 +120,6 @@ function Chart() {
       }
     }
 
-    // yearly comparison data (all years ascending)
     const allYearsAsc = Array.from(new Set([
       ...incomes.map(i => parseDate(i.date).getFullYear()).filter(y => !isNaN(y)),
       ...expenses.map(e => parseDate(e.date).getFullYear()).filter(y => !isNaN(y)),
@@ -160,7 +140,6 @@ function Chart() {
       }, 0)
     );
 
-    // yearly warning: selected year's expense > previous year's expense
     let yearlyWarning = null;
     const idxSel = allYearsAsc.indexOf(selectedYear);
     if (idxSel > 0) {
@@ -195,7 +174,6 @@ function Chart() {
     };
   }, [incomes, expenses, selectedYear]);
 
-  // Chart data: mixed monthly (bar expense + line income)
   const mixedMonthlyData = useMemo(() => {
     return {
       labels: months,
@@ -224,7 +202,6 @@ function Chart() {
     };
   }, [derived.monthlyIncome, derived.monthlyExpense]);
 
-  // Yearly comparison grouped bars
   const yearlyComparisonData = useMemo(() => {
     return {
       labels: derived.allYearsAsc.map(String),
@@ -259,7 +236,6 @@ function Chart() {
     },
   };
 
-  // small helpers
   const fmt = (n) => `₹${Number(n || 0).toLocaleString()}`;
   const savingsPct = derived.totalIncomeYear > 0
     ? (((derived.totalIncomeYear - derived.totalExpenseYear) / derived.totalIncomeYear) * 100).toFixed(1)
@@ -291,18 +267,15 @@ function Chart() {
             <div className="label">Total Income</div>
             <div className="value">{fmt(derived.totalIncomeYear)}</div>
           </StatCard>
-
           <StatCard color="#ff6b6b">
             <div className="label">Total Expense</div>
             <div className="value">{fmt(derived.totalExpenseYear)}</div>
           </StatCard>
-
           <StatCard color="#2979ff">
             <div className="label">Savings</div>
             <div className="value">{fmt(derived.totalSavingsYear)}</div>
             <div className="small muted">Savings rate: <strong>{savingsPct}%</strong></div>
           </StatCard>
-
           <StatCard color="#f59e0b">
             <div className="label">Wallet (All-time)</div>
             <div className="value">{fmt(derived.walletAllTime)}</div>
@@ -311,7 +284,6 @@ function Chart() {
         </RightPanel>
       </MainGrid>
 
-      {/* Warnings */}
       <WarningsRow>
         {derived.monthlyWarning ? (
           <WarnBox danger>
@@ -330,7 +302,6 @@ function Chart() {
         )}
       </WarningsRow>
 
-      {/* Overspent months list */}
       <Overspent>
         {derived.overspentMonths.length > 0 ? (
           <div>
@@ -341,7 +312,6 @@ function Chart() {
         )}
       </Overspent>
 
-      {/* Year-to-year comparison */}
       <ComparisonSection>
         <h4>Year-to-Year Comparison</h4>
         <div className="comparison-grid">
@@ -357,7 +327,6 @@ function Chart() {
                 return derived.allYearsAsc[idx] ?? "N/A";
               })()}
             </p>
-
             <p><strong>Highest spending year:</strong>{" "}
               {(() => {
                 const max = Math.max(...derived.yearlyExpenseTotals);
@@ -365,8 +334,6 @@ function Chart() {
                 return derived.allYearsAsc[idx] ?? "N/A";
               })()}
             </p>
-
-          
           </div>
         </div>
       </ComparisonSection>
@@ -390,7 +357,6 @@ const TopRow = styled.div`
   align-items:center;
   gap:12px;
   margin-bottom:12px;
-
   .muted { color: #9fb0d6; font-size:0.92rem; }
 `;
 
@@ -415,13 +381,8 @@ const MainGrid = styled.div`
   grid-template-columns: 1fr 280px;
   gap: 18px;
   align-items:start;
-
-  @media (max-width:880px) {
-    grid-template-columns: 1fr 220px;
-  }
-  @media (max-width:720px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width:880px) { grid-template-columns: 1fr 220px; }
+  @media (max-width:720px) { grid-template-columns: 1fr; }
 `;
 
 const ChartArea = styled.div`
@@ -435,7 +396,6 @@ const RightPanel = styled.aside`
   display:flex;
   flex-direction:column;
   gap:10px;
-
   @media (max-width:720px) {
     flex-direction:row;
     overflow-x:auto;
@@ -483,17 +443,14 @@ const Overspent = styled.div`
 
 const ComparisonSection = styled.section`
   margin-top:16px;
-
   h4 { margin:0 0 8px 0; color:#dbeafe; }
   .comparison-grid {
     display:flex;
     gap:12px;
     align-items:flex-start;
-
     .comp-chart { flex:1; min-height:150px; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); padding:8px; border-radius:10px; }
     .comp-insights { width:240px; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); padding:10px; border-radius:10px; }
   }
-
   @media (max-width:720px) {
     .comparison-grid { flex-direction:column; }
     .comp-insights { width:100%; }
