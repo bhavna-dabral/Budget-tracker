@@ -1,7 +1,11 @@
 import React from 'react'
 import styled from 'styled-components'
 import { dateFormat } from '../../utils/dateFormat';
-import { bitcoin, book, calender, card, circle, clothing, comment, food, freelance, medical, money, piggy, stocks, takeaway, trash, tv, users, yt } from '../../utils/Icons';
+import { 
+    bitcoin, book, calender, card, circle, clothing, 
+    comment, food, freelance, medical, money, piggy, 
+    stocks, takeaway, trash, tv, users, yt 
+} from '../../utils/Icons';
 import Button from '../Button/Button';
 
 function IncomeItem({
@@ -16,56 +20,37 @@ function IncomeItem({
     type
 }) {
 
-    const categoryIcon = () =>{
+    const categoryIcon = () => {
         switch(category) {
-            case 'salary':
-                return money;
-            case 'freelancing':
-                return freelance
-            case 'investments':
-                return stocks;
-            case 'stocks':
-                return users;
-            case 'bitcoin':
-                return bitcoin;
-            case 'bank':
-                return card;
-            case 'youtube':
-                return yt;
-            case 'other':
-                return piggy;
-            default:
-                return ''
+            case 'salary': return money;
+            case 'freelancing': return freelance;
+            case 'investments': return stocks;
+            case 'stocks': return users;
+            case 'bitcoin': return bitcoin;
+            case 'bank': return card;
+            case 'youtube': return yt;
+            case 'other': return piggy;
+            default: return '';
         }
     }
 
     const expenseCatIcon = () => {
         switch (category) {
-            case 'education':
-                return book;
-            case 'groceries':
-                return food;
-            case 'health':
-                return medical;
-            case 'subscriptions':
-                return tv;
-            case 'takeaways':
-                return takeaway;
-            case 'clothing':
-                return clothing;
-            case 'travelling':
-                return freelance;
-            case 'other':
-                return circle;
-            default:
-                return ''
+            case 'education': return book;
+            case 'groceries': return food;
+            case 'health': return medical;
+            case 'subscriptions': return tv;
+            case 'takeaways': return takeaway;
+            case 'clothing': return clothing;
+            case 'travelling': return freelance;
+            case 'other': return circle;
+            default: return '';
         }
     }
 
-    console.log('type', type)
-
     return (
-        <IncomeItemStyled indicator={indicatorColor}>
+        /* Use $indicator (transient prop) to prevent it from leaking to the DOM */
+        <IncomeItemStyled $indicator={indicatorColor}>
             <div className="icon">
                 {type === 'expense' ? expenseCatIcon() : categoryIcon()}
             </div>
@@ -85,7 +70,7 @@ function IncomeItem({
                             icon={trash}
                             bPad={'1rem'}
                             bRad={'50%'}
-                            bg={'var(--primary-color'}
+                            bg={'var(--primary-color)'}
                             color={'#fff'}
                             iColor={'#fff'}
                             hColor={'var(--color-green)'}
@@ -120,7 +105,7 @@ const IncomeItemStyled = styled.div`
         align-items: center;
         justify-content: center;
         border: 2px solid #FFFFFF;
-        flex-shrink: 0; /* Prevents icon from squishing on small screens */
+        flex-shrink: 0; /* Ensures icon stays circular/square on resize */
 
         i {
             font-size: 2.6rem;
@@ -132,7 +117,6 @@ const IncomeItemStyled = styled.div`
         display: flex;
         flex-direction: column;
         gap: 0.2rem;
-        width: 100%;
 
         h5 {
             font-size: 1.3rem;
@@ -147,7 +131,8 @@ const IncomeItemStyled = styled.div`
                 width: 0.8rem;
                 height: 0.8rem;
                 border-radius: 50%;
-                background: ${props => props.indicator};
+                /* Access the transient prop $indicator */
+                background: ${props => props.$indicator};
             }
         }
 
@@ -155,12 +140,13 @@ const IncomeItemStyled = styled.div`
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
             
             .text {
                 display: flex;
                 align-items: center;
                 gap: 1.5rem;
-                flex-wrap: wrap; /* Critical for long text/descriptions */
+                flex-wrap: wrap; /* Wraps text if description is long */
 
                 p {
                     display: flex;
@@ -173,59 +159,47 @@ const IncomeItemStyled = styled.div`
         }
     }
 
-    /* 📱 Tablet Responsive (Max-width: 1024px) */
+    /* 📱 Tablet (Max-width: 1024px) */
     @media screen and (max-width: 1024px) {
-        .content {
-            .inner-content {
-                .text {
-                    gap: 1rem;
-                }
-            }
+        .content .inner-content .text {
+            gap: 1rem;
         }
     }
 
-    /* 📱 Mobile Responsive (Max-width: 600px) */
+    /* 📱 Mobile (Max-width: 600px) */
     @media screen and (max-width: 600px) {
-        padding: 0.7rem;
-        align-items: flex-start; /* Better alignment for wrapped content */
+        padding: 0.8rem;
+        align-items: flex-start;
 
         .icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            i {
-                font-size: 1.5rem;
-            }
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            i { font-size: 1.8rem; }
         }
 
         .content {
-            h5 {
-                font-size: 1.1rem;
-                padding-left: 1.2rem;
-                &::before {
-                    width: 0.6rem;
-                    height: 0.6rem;
-                }
-            }
-
+            h5 { font-size: 1.1rem; }
+            
             .inner-content {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 0.8rem;
+                gap: 1rem;
 
                 .text {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 0.4rem;
+                    gap: 0.5rem;
                 }
 
                 .btn-con {
                     width: 100%;
                     display: flex;
-                    justify-content: flex-end; /* Keeps delete button reachable */
+                    justify-content: flex-end;
                 }
             }
         }
     }
 `;
-export default IncomeItem
+
+export default IncomeItem;
