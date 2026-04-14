@@ -98,124 +98,134 @@ function IncomeItem({
     )
 }
 
-const IncomeItemStyled = styled.form`
-  background: #FCF6F9;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  color: #222260;
-
-  .icon {
-    width: 80px;
-    height: 80px;
+const IncomeItemStyled = styled.div`
+    background: #FCF6F9;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
     border-radius: 20px;
-    background: #F5F5F5;
+    padding: 1rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    border: 2px solid #FFFFFF;
-
-    i {
-      font-size: 2.6rem;
-    }
-  }
-
-  .content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-
-    h5 {
-      font-size: 1.3rem;
-      padding-left: 2rem;
-      position: relative;
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 0.8rem;
-        height: 0.8rem;
-        border-radius: 50%;
-        background: ${props => props.indicator};
-      }
-    }
-
-    .inner-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-
-      .text {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 1rem;
-
-        p {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--primary-color);
-          opacity: 0.8;
-          font-size: 0.9rem;
-        }
-      }
-
-      .btn-con {
-        margin-top: 0.5rem;
-      }
-    }
-  }
-
-  /* 📱 Responsive styles */
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 0.8rem;
-    gap: 0.5rem;
+    gap: 1rem;
+    width: 100%;
+    color: #222260;
 
     .icon {
-      width: 60px;
-      height: 60px;
-      i {
-        font-size: 2rem;
-      }
-    }
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        background: #F5F5F5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #FFFFFF;
+        flex-shrink: 0; /* Prevents icon from squishing on small screens */
 
-    .content h5 {
-      font-size: 1.1rem;
-      padding-left: 1.5rem;
-    }
-
-    .inner-content {
-      flex-direction: column;
-      align-items: flex-start;
-
-      .text {
-        flex-direction: column;
-        gap: 0.5rem;
-
-        p {
-          font-size: 0.85rem;
+        i {
+            font-size: 2.6rem;
         }
-      }
-
-      .btn-con {
-        align-self: flex-end;
-      }
     }
-  }
-`;
 
+    .content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        width: 100%;
+
+        h5 {
+            font-size: 1.3rem;
+            padding-left: 2rem;
+            position: relative;
+            &::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0.8rem;
+                height: 0.8rem;
+                border-radius: 50%;
+                background: ${props => props.indicator};
+            }
+        }
+
+        .inner-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            .text {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                flex-wrap: wrap; /* Critical for long text/descriptions */
+
+                p {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--primary-color);
+                    opacity: 0.8;
+                }
+            }
+        }
+    }
+
+    /* 📱 Tablet Responsive (Max-width: 1024px) */
+    @media screen and (max-width: 1024px) {
+        .content {
+            .inner-content {
+                .text {
+                    gap: 1rem;
+                }
+            }
+        }
+    }
+
+    /* 📱 Mobile Responsive (Max-width: 600px) */
+    @media screen and (max-width: 600px) {
+        padding: 0.7rem;
+        align-items: flex-start; /* Better alignment for wrapped content */
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            i {
+                font-size: 1.5rem;
+            }
+        }
+
+        .content {
+            h5 {
+                font-size: 1.1rem;
+                padding-left: 1.2rem;
+                &::before {
+                    width: 0.6rem;
+                    height: 0.6rem;
+                }
+            }
+
+            .inner-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.8rem;
+
+                .text {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.4rem;
+                }
+
+                .btn-con {
+                    width: 100%;
+                    display: flex;
+                    justify-content: flex-end; /* Keeps delete button reachable */
+                }
+            }
+        }
+    }
+`;
 export default IncomeItem

@@ -1,4 +1,4 @@
-// app.js
+import 'dotenv/config';
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 5000;
 // ===================== ✅ CORS CONFIG (MUST BE FIRST) =====================
 const allowedOrigins = [
   "http://localhost:3000", // local dev
-  "https://expence-tracker-1rsm.vercel.app", // your Vercel frontend
+   // your Vercel frontend
 ];
 
 const corsOptions = {

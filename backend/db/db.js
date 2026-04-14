@@ -3,13 +3,19 @@ import mongoose from 'mongoose'
 export const db = async () => {
     try {
         mongoose.set('strictQuery', false)
-        await mongoose.connect(process.env.MONGO_URL, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        })
-        console.log('Db Connected')
+        
+        // Check if the variable is actually loading
+        if (!process.env.MONGO_URL) {
+            throw new Error("MONGO_URL is not defined in .env file");
+        }
+
+        // Modern Mongoose doesn't need the options object anymore
+        await mongoose.connect(process.env.MONGO_URL)
+        
+        console.log('✅ Db Connected')
     } catch (error) {
-        console.error('DB Connection Error:', error.message)  // <-- show actual error
-        throw error   // <-- prevent server from starting if DB fails
+        // This will tell us if it's a DNS error or a missing variable
+        console.error('❌ DB Connection Error:', error.message)
+        throw error 
     }
 }
