@@ -24,7 +24,7 @@ const Dashboard = () => {
       if (!token) return;
       setLoading(true);
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+        const backendUrl = process.env.REACT_APP_BACKEND_URL
         const { data } = await axios.get(`${backendUrl}/api/transactions/get-expenses`, {
           headers: { token },
         });
