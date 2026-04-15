@@ -4,28 +4,26 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
   PointElement,
   LineElement,
-  ArcElement,
+  Title,
   Tooltip,
   Legend,
-  Filler, // Required to fix the "Filler" warning in your console
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
-import { useGlobalContext } from "../../context/globalContext";
+  ArcElement,      // Include this if you use Pie/Doughnut charts
+  BarElement       // Include this if you use Bar charts
+} from 'chart.js';
 
-// Register all necessary components
+// ✅ This is the "Magic Line" that fixes your error
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
   PointElement,
   LineElement,
-  ArcElement,
+  Title,
   Tooltip,
   Legend,
-  Filler
+  ArcElement,
+  BarElement
 );
 
 function Chart() {
