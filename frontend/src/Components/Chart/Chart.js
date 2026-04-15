@@ -6,30 +6,27 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  BarElement, // Required for Bar type
+  BarElement,
   Title,
   Tooltip,
   Legend,
-  Filler,     // Required for "fill: true"
-  BarController, // Required for Mixed charts
-  LineController
+  Filler,
+  LineController, // <--- Add this
+  BarController   // <--- Add this
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2'; // Use generic Chart for mixed types
-import { useGlobalContext } from "../../context/globalContext"; // Ensure path is correct
 
-// Register everything including Bar and Filler
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
   BarElement,
-  BarController,
-  LineController,
+  LineController, // <--- Register this
+  BarController,  // <--- Register this
   Title,
   Tooltip,
   Legend,
-  Filler 
+  Filler
 );
 
 function AnalyticsChart() {
