@@ -1,35 +1,45 @@
-// src/App.js
 import React, { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 
-// ✅ Page Components
+// Pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 
-// ✅ Dashboard Layout (includes Navigation + internal pages)
+// Layout
 import DashboardLayout from "./Layouts/DashboardLayout";
 
-// ✅ PrivateRoute wrapper
+/* ---------------- PRIVATE ROUTE ---------------- */
+
 const PrivateRoute = ({ children }) => {
   const { token } = useContext(AuthContext);
-  return token ? children : <Navigate to="/login" replace />;
+
+  // 🔐 if no token → force login
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
+
+/* ---------------- APP ---------------- */
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
+
+          {/* ---------------- PUBLIC ROUTES ---------------- */}
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Protected route — only for authenticated users */}
+          {/* ---------------- PROTECTED ROUTES ---------------- */}
           <Route
-            path="/*"
+            path="/dashboard/*"
             element={
               <PrivateRoute>
                 <DashboardLayout />
@@ -37,8 +47,9 @@ function App() {
             }
           />
 
-          {/* Catch-all redirect for undefined routes */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* ---------------- FALLBACK ---------------- */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
