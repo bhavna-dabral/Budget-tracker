@@ -3,32 +3,28 @@ import styled from "styled-components";
 import { Chart } from 'react-chartjs-2'; // Added this
 import { useGlobalContext } from "../context/globalContext"; // Added this (adjust path if needed)
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  LineElement, // THIS IS THE CRITICAL ONE
   PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  LineController,
-  BarController 
+  Title, 
+  Tooltip, 
+  Legend, 
+  ArcElement,
 } from 'chart.js';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  LineElement, // AND REGISTER IT HERE
   PointElement,
-  LineElement,
-  BarElement,
-  LineController,
-  BarController,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+  Title, 
+  Tooltip, 
+  Legend, 
+  ArcElement
 );
 
 function AnalyticsChart() {

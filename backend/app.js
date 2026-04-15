@@ -29,12 +29,10 @@ const __dirname = path.dirname(__filename);
 // ===================== Security & CORS =====================
 // ===================== Security & CORS =====================
 const allowedOrigins = [
-  "https://budget-tracker-3rch.vercel.app",       // 🆕 Added from your screenshot
-  "https://budget-tracker-kohl-seven.vercel.app", // Your main Vercel link
-  "http://localhost:5173",                        // Local Vite
-  "http://localhost:3000"                         // Local Alternative
+  "https://budget-tracker-3rch.vercel.app",
+  "https://budget-tracker-3rch-ohv255xq9-bhavnas-projects-2e67d94c.vercel.app", // ADD THIS EXACT ONE FROM SCREENSHOT 465
+  "http://localhost:5173",
 ];
-
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps) or if it's in our allowed list
