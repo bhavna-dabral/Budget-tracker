@@ -10,34 +10,32 @@ import userRouter from "./routes/userRoutes.js";
 import multer from "multer";
 import { uploadAvatar } from "./controllers/userController.js";
 import authUser from "./middleware/authUser.js";
-import { sendEmail } from "./config/brevo.js";// if same level
 
+// Initialize dotenv for safety (though 'dotenv/config' handles it)
 dotenv.config();
 
+const app = express();
+
+/** * PORT CONFIGURATION
+ * Render provides the port via process.env.PORT. 
+ * We fallback to 5000 for local development.
+ */
+const PORT = process.env.PORT || 5000;
+
+// Resolve __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ... existing imports
-const app = express();
-
-// ✅ IMPORTANT: Use the port Render provides, or fallback to 5000 for local
-const PORT = process.env.PORT || 5000;
-
-// ✅ Ensure CORS allows your Vercel URL
-app.use(cors({
-  origin: ["http://localhost:3000", "https://finance-tracker1-tau.vercel.app"],
-  credentials: true
-}));
-
-// ... routes setup
-
-app.listen(PORT, () => {
-  console.log(`✅ Server is live on port ${PORT}`);
-});
+// ===================== Security & CORS =====================
+const allowedOrigins = [
+  "https://budget-tracker-kohl-seven.vercel.app", // Your Frontend
+  "http://localhost:5173",                       // Local Vite
+  "http://localhost:3000"                        // Local Alternative
+];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -51,15 +49,14 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("*", cors(corsOptions)); // Handle pre-flight requests
 
-// ===================== Middleware =====================
+// ===================== Global Middleware =====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ===================== File Upload Setup =====================
-// Helper to ensure upload directories exist
 const uploadDir = path.join(__dirname, "uploads/avatars");
 if (!existsSync(uploadDir)) {
   mkdirSync(uploadDir, { recursive: true });
@@ -77,32 +74,49 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ===================== Routes =====================
+
+// Explicitly defined routes
 app.use("/api/user", userRouter);
 app.post("/api/user/upload-avatar", authUser, upload.single("avatar"), uploadAvatar);
 
+// Auto-load other route files from the /routes directory
 const routesDir = path.join(__dirname, "routes");
-for (const file of readdirSync(routesDir)) {
-  if (!file.endsWith(".js") || file === "userRoutes.js") continue;
-  const routeModule = await import(`./routes/${file}`);
-  const router = routeModule.default || routeModule;
-  app.use("/api/v1", router);
+if (existsSync(routesDir)) {
+  const files = readdirSync(routesDir);
+  for (const file of files) {
+    // Avoid re-importing userRoutes.js since it's already used above
+    if (!file.endsWith(".js") || file === "userRoutes.js") continue;
+    
+    const routePath = `./routes/${file}`;
+    const routeModule = await import(routePath);
+    const router = routeModule.default || routeModule;
+    app.use("/api/v1", router);
+  }
 }
 
+// Health Check
 app.get("/", (req, res) => {
   res.send("🚀 Expense Tracker API is running successfully!");
 });
 
-// ===================== Server =====================
+// ===================== Server Execution =====================
 const startServer = async () => {
   try {
+    // 1. Connect to Database first
     await db();
-    app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+    
+    // 2. Start listening only after DB connection is successful
+    app.listen(PORT, () => {
+      console.log(`✅ Server is live on port ${PORT}`);
+      console.log(`🌐 Accepting requests from: ${allowedOrigins.join(", ")}`);
+    });
   } catch (err) {
-    console.error("❌ Failed to start server:", err);
+    console.error("❌ Database connection failed. Server not started:", err);
     process.exit(1);
   }
 };
 
+// Protect against running server during automated tests
 if (process.env.NODE_ENV !== "test") {
   startServer();
 }

@@ -1,21 +1,23 @@
 import axios from "axios";
 
-// ✅ Automatic URL detection
 const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
 const backendURL = isLocal 
   ? "http://localhost:5000" 
-  : "https://budget-tracker-1430.onrender.com"; // Matches your Render screenshot
+  : "https://budget-tracker-1430.onrender.com";
 
 const API = axios.create({
-  baseURL: `${backendURL}/api`, // Ensure this matches your backend route prefix
+  // Remove the trailing /api here to give you more flexibility 
+  // with /api/user and /api/v1 routes
+  baseURL: backendURL, 
   withCredentials: true,
 });
 
-// ✅ Request Interceptor for Auth
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
-  if (token) req.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    req.headers.Authorization = `Bearer ${token}`;
+  }
   return req;
 });
 
