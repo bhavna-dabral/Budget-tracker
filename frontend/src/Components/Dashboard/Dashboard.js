@@ -1,235 +1,226 @@
-// src/Components/Chart/Chart.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
 import { useGlobalContext } from "../../context/globalContext";
+import { InnerLayout } from "../../styles/Layouts";
+import Chart from "../Chart/Chart";
+import { dollar } from "../../utils/Icons";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Tooltip,
-  Legend
-);
-
-/* ---------------- Helpers ---------------- */
-
-const months = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec"
-];
-
-// ✅ SAFE DATE PARSER (FIXED)
-const parseDate = (d) => {
-  if (!d) return null;
-
-  if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
-
-  if (typeof d === "string" && /^\d{1,2}-\d{1,2}-\d{4}$/.test(d.trim())) {
-    const [dd, mm, yyyy] = d.trim().split("-").map(Number);
-    const date = new Date(yyyy, mm - 1, dd);
-    return isNaN(date.getTime()) ? null : date;
-  }
-
-  const parsed = new Date(d);
-  return isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const monthlySums = (items, year) => {
-  const arr = Array(12).fill(0);
-
-  items.forEach((it) => {
-    const dt = parseDate(it.date);
-
-    if (dt && dt.getFullYear() === year) {
-      arr[dt.getMonth()] += Number(it.amount || 0);
-    }
-  });
-
-  return arr;
-};
-
-/* ---------------- Component ---------------- */
-
-function Chart() {
-  const { incomes = [], expenses = [] } = useGlobalContext();
-
-  const availableYears = useMemo(() => {
-    const years = new Set();
-
-    incomes.forEach((it) => {
-      const dt = parseDate(it.date);
-      if (dt) years.add(dt.getFullYear());
-    });
-
-    expenses.forEach((it) => {
-      const dt = parseDate(it.date);
-      if (dt) years.add(dt.getFullYear());
-    });
-
-    if (years.size === 0) years.add(new Date().getFullYear());
-
-    return Array.from(years).sort((a, b) => b - a);
-  }, [incomes, expenses]);
-
-  const [selectedYear, setSelectedYear] = useState(
-    availableYears[0] || new Date().getFullYear()
-  );
+function Dashboard() {
+  const {
+    totalIncome,
+    totalExpenses,
+    totalBalance,
+    getIncomes,
+    getExpenses,
+    transactionHistory,
+  } = useGlobalContext();
 
   useEffect(() => {
-    if (!availableYears.includes(selectedYear)) {
-      setSelectedYear(availableYears[0]);
-    }
-  }, [availableYears, selectedYear]);
+    getIncomes();
+    getExpenses();
+  }, [getIncomes, getExpenses]);
 
-  /* ---------------- Derived Data ---------------- */
-
-  const derived = useMemo(() => {
-    const monthlyIncome = monthlySums(incomes, selectedYear);
-    const monthlyExpense = monthlySums(expenses, selectedYear);
-
-    const totalIncomeYear = monthlyIncome.reduce((a, b) => a + b, 0);
-    const totalExpenseYear = monthlyExpense.reduce((a, b) => a + b, 0);
-
-    const allIncome = incomes.reduce((s, i) => s + Number(i.amount || 0), 0);
-    const allExpense = expenses.reduce((s, i) => s + Number(i.amount || 0), 0);
-
-    const walletAllTime = allIncome - allExpense;
-
-    const overspentMonths = months.filter(
-      (_, i) => monthlyExpense[i] > monthlyIncome[i]
-    );
-
-    const allYearsAsc = Array.from(
-      new Set([
-        ...incomes.map(i => parseDate(i.date)?.getFullYear()).filter(Boolean),
-        ...expenses.map(e => parseDate(e.date)?.getFullYear()).filter(Boolean),
-      ])
-    ).sort((a, b) => a - b);
-
-    const yearlyIncomeTotals = allYearsAsc.map((y) =>
-      incomes.reduce((s, it) => {
-        const dt = parseDate(it.date);
-        return dt && dt.getFullYear() === y ? s + Number(it.amount || 0) : s;
-      }, 0)
-    );
-
-    const yearlyExpenseTotals = allYearsAsc.map((y) =>
-      expenses.reduce((s, it) => {
-        const dt = parseDate(it.date);
-        return dt && dt.getFullYear() === y ? s + Number(it.amount || 0) : s;
-      }, 0)
-    );
-
-    return {
-      monthlyIncome,
-      monthlyExpense,
-      totalIncomeYear,
-      totalExpenseYear,
-      walletAllTime,
-      overspentMonths,
-      allYearsAsc,
-      yearlyIncomeTotals,
-      yearlyExpenseTotals,
-    };
-  }, [incomes, expenses, selectedYear]);
-
-  /* ---------------- Chart Data ---------------- */
-
-  const mixedMonthlyData = useMemo(() => ({
-    labels: months,
-    datasets: [
-      {
-        type: "bar",
-        label: "Expense",
-        data: derived.monthlyExpense,
-        backgroundColor: "#ff6b6b",
-        borderRadius: 6,
-      },
-      {
-        type: "line",
-        label: "Income",
-        data: derived.monthlyIncome,
-        borderColor: "#00e676",
-        tension: 0.3,
-        borderWidth: 3,
-      },
-    ],
-  }), [derived]);
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top" },
-    },
-    scales: {
-      x: { grid: { display: false } },
-      y: { beginAtZero: true },
-    },
-  };
-
-  const fmt = (n) => `₹${Number(n || 0).toLocaleString()}`;
+  const history = transactionHistory();
 
   return (
-    <Wrap>
-      <h2>Analytics</h2>
+    <DashboardStyled>
+      <InnerLayout>
+        <h1>📊 Dashboard Overview</h1>
 
-      <select
-        value={selectedYear}
-        onChange={(e) => setSelectedYear(Number(e.target.value))}
-      >
-        {availableYears.map((y) => (
-          <option key={y} value={y}>{y}</option>
-        ))}
-      </select>
+        {/* === Summary Section === */}
+        <div className="summary-grid">
+          <div className="card income">
+            <h3>Total Income</h3>
+            <p>₹{totalIncome()}</p>
+          </div>
+          <div className="card expense">
+            <h3>Total Expense</h3>
+            <p>₹{totalExpenses()}</p>
+          </div>
+          <div className="card balance">
+            <h3>Total Balance</h3>
+            <p>₹{totalBalance()}</p>
+          </div>
+        </div>
 
-      <ChartBox>
-        <Bar data={mixedMonthlyData} options={chartOptions} />
-      </ChartBox>
+        {/* === Chart Section === */}
+        <div className="chart-card">
+          <Chart />
+        </div>
 
-      <div>
-        <p>Total Income: {fmt(derived.totalIncomeYear)}</p>
-        <p>Total Expense: {fmt(derived.totalExpenseYear)}</p>
-        <p>Wallet: {fmt(derived.walletAllTime)}</p>
-      </div>
+        {/* === Recent Transactions === */}
+        <div className="history-section">
+          <h2>Recent Transactions</h2>
 
-      <div>
-        {derived.overspentMonths.length > 0 ? (
-          <p>⚠ Overspent: {derived.overspentMonths.join(", ")}</p>
-        ) : (
-          <p>✅ No overspending months</p>
-        )}
-      </div>
-    </Wrap>
+          {history.length > 0 ? (
+            <div className="transactions">
+              {history.map((item) => (
+                <div
+                  key={item._id}
+                  className={`transaction ${item.type}`}
+                >
+                  <div className="left">
+                    <p className="title">{item.title}</p>
+                    <p className="category">{item.category}</p>
+                  </div>
+                  <div className="right">
+                  <p className="amount">
+  {item.type === "income" ? "+" : "-"} ₹{item.amount}
+</p>
+
+                    <p className="date">
+                      {new Date(item.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="no-transactions">No transactions yet.</p>
+          )}
+        </div>
+      </InnerLayout>
+    </DashboardStyled>
   );
 }
 
-/* ---------------- Styles ---------------- */
+const DashboardStyled = styled.div`
+  h1 {
+    font-size: 2rem;
+    color: #222260;
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
 
-const Wrap = styled.div`
-  padding: 20px;
-  color: #fff;
-  background: #0b1726;
+  /* === Summary Grid === */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      transition: 0.3s ease;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      }
+
+      h3 {
+        color: #555;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        font-size: 1.6rem;
+        font-weight: 700;
+      }
+
+      &.income p {
+        color: #00b09b;
+      }
+
+      &.expense p {
+        color: #ff4b2b;
+      }
+
+      &.balance p {
+        color: #007bff;
+      }
+    }
+  }
+
+  /* === Chart Card === */
+  .chart-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  /* === Recent Transactions === */
+  .history-section {
+    h2 {
+      font-size: 1.4rem;
+      color: #222260;
+      margin-bottom: 1.5rem;
+    }
+
+    .transactions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .transaction {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        border-left: 5px solid transparent;
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        transition: 0.3s ease;
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        &.income {
+          border-left-color: #00b09b;
+        }
+
+        &.expense {
+          border-left-color: #ff4b2b;
+        }
+
+        .left {
+          .title {
+            font-weight: 600;
+            color: #222260;
+          }
+
+          .category {
+            font-size: 0.85rem;
+            color: #777;
+          }
+        }
+
+        .right {
+          text-align: right;
+
+          .amount {
+            font-weight: 600;
+            color: #222260;
+          }
+
+          .date {
+            font-size: 0.8rem;
+            color: #888;
+          }
+        }
+      }
+    }
+
+    .no-transactions {
+      text-align: center;
+      color: #777;
+      font-style: italic;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+  }
 `;
 
-const ChartBox = styled.div`
-  height: 350px;
-  margin-top: 20px;
-`;
-
-export default Chart;
+export default Dashboard;
