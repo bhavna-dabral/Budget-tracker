@@ -27,19 +27,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ===================== Security & CORS =====================
+// ===================== Security & CORS =====================
 const allowedOrigins = [
-  "https://budget-tracker-kohl-seven.vercel.app", // Your Frontend
-  "http://localhost:5173",                       // Local Vite
-  "http://localhost:3000"                        // Local Alternative
+  "https://budget-tracker-3rch.vercel.app",       // 🆕 Added from your screenshot
+  "https://budget-tracker-kohl-seven.vercel.app", // Your main Vercel link
+  "http://localhost:5173",                        // Local Vite
+  "http://localhost:3000"                         // Local Alternative
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+    // Allow requests with no origin (like mobile apps) or if it's in our allowed list
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log("❌ Blocked by CORS:", origin);
+      console.log("❌ CORS Blocked for origin:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
@@ -49,7 +51,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle pre-flight requests
+app.options("*", cors(corsOptions)); // Essential for the "Preflight" requests seen in your console// Handle pre-flight requests
 
 // ===================== Global Middleware =====================
 app.use(express.json());
