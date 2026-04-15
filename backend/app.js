@@ -17,14 +17,23 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ... existing imports
 const app = express();
+
+// ✅ IMPORTANT: Use the port Render provides, or fallback to 5000 for local
 const PORT = process.env.PORT || 5000;
 
-// ===================== ✅ CORS CONFIG =====================
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://finance-tracker1-tau.vercel.app" // Your live frontend link
-];
+// ✅ Ensure CORS allows your Vercel URL
+app.use(cors({
+  origin: ["http://localhost:3000", "https://finance-tracker1-tau.vercel.app"],
+  credentials: true
+}));
+
+// ... routes setup
+
+app.listen(PORT, () => {
+  console.log(`✅ Server is live on port ${PORT}`);
+});
 
 const corsOptions = {
   origin: function (origin, callback) {
