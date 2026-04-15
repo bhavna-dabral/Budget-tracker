@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
 import styled from "styled-components";
+import { Chart } from 'react-chartjs-2'; // Added this
+import { useGlobalContext } from "../context/globalContext"; // Added this (adjust path if needed)
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +13,8 @@ import {
   Tooltip,
   Legend,
   Filler,
-  LineController, // <--- Add this
-  BarController   // <--- Add this
+  LineController,
+  BarController 
 } from 'chart.js';
 
 ChartJS.register(
@@ -21,8 +23,8 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
-  LineController, // <--- Register this
-  BarController,  // <--- Register this
+  LineController,
+  BarController,
   Title,
   Tooltip,
   Legend,
@@ -98,14 +100,14 @@ function AnalyticsChart() {
     labels: months,
     datasets: [
       {
-        type: "line", // Line should usually be on top of Bar
+        type: "line",
         label: "Income",
         data: derived.monthlyIncome,
         borderColor: "#00e676",
         backgroundColor: "rgba(0, 230, 118, 0.1)",
         fill: true,
         tension: 0.4,
-        order: 1 // Controls Z-index
+        order: 1
       },
       {
         type: "bar",
@@ -181,3 +183,64 @@ function AnalyticsChart() {
     </ChartWrap>
   );
 }
+
+// Styled Components
+const ChartWrap = styled.div`
+    background: #212431;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    border-radius: 20px;
+    height: 100%;
+`;
+
+const HeaderSection = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    h2 { color: #fff; }
+    p { color: #9fb0d6; font-size: 0.9rem; }
+    select {
+        background: #2a2e3f;
+        color: #fff;
+        padding: 0.5rem;
+        border-radius: 5px;
+        border: 1px solid #444;
+    }
+`;
+
+const MainGrid = styled.div`
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    height: 350px;
+    @media (max-width: 768px) { grid-template-columns: 1fr; height: auto; }
+`;
+
+const ChartArea = styled.div` background: rgba(0,0,0,0.2); border-radius: 10px; padding: 1rem; `;
+
+const SideStats = styled.div` display: flex; flex-direction: column; gap: 0.8rem; `;
+
+const StatCard = styled.div`
+    background: #2a2e3f;
+    padding: 1rem;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    border-left: 5px solid ${props => props.$color};
+    .label { font-size: 0.8rem; color: #9fb0d6; }
+    .value { font-size: 1.2rem; font-weight: 700; color: #fff; }
+`;
+
+const FeedbackArea = styled.div` margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; `;
+
+const WarnBox = styled.div`
+    background: ${props => props.$danger ? 'rgba(255, 107, 107, 0.1)' : 'rgba(0, 230, 118, 0.1)'};
+    color: ${props => props.$danger ? '#ff6b6b' : '#00e676'};
+    padding: 0.8rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+`;
+
+export default AnalyticsChart;
