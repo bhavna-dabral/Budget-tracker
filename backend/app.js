@@ -10,6 +10,7 @@ import userRouter from "./routes/userRoutes.js";
 import multer from "multer";
 import { uploadAvatar } from "./controllers/userController.js";
 import authUser from "./middleware/authUser.js";
+import { sendEmail } from "./config/brevo.js";// if same level
 
 dotenv.config();
 

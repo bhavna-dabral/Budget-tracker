@@ -1,43 +1,33 @@
-// backend/config/brevo.js
-import { createRequire } from 'module';
-import dotenv from "dotenv";
+import nodemailer from 'nodemailer';
 
-const require = createRequire(import.meta.url);
-const rawBrevo = require('@getbrevo/brevo');
+// Create the transporter using your Brevo SMTP credentials
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-// This line ensures we get the actual library, 
-// whether Node wraps it in .default or not.
-const Brevo = rawBrevo.default || rawBrevo;
-
-dotenv.config();
-
-// Initialize the API instance
-const apiInstance = new Brevo.TransactionalEmailsApi();
-
-// Set the API Key
-apiInstance.setApiKey(
-  Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
-
-export const sendEmail = async (to, subject, htmlContent) => {
+// ✅ EXPORT FUNCTION
+export const sendEmail = async (to, subject, html) => {
   try {
-    const senderEmail = process.env.SENDER_EMAIL || "no-reply@example.com";
-
-    const sendSmtpEmail = {
+    const mailOptions = {
+      from: `"Expense Tracker" <${process.env.SENDER_EMAIL}>`,
+      to: to,
       subject: subject,
-      htmlContent: htmlContent,
-      sender: { name: "Budget Tracker", email: senderEmail },
-      to: [{ email: to }],
+      html: html,
     };
 
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log("✅ Email sent successfully! ID:", info.messageId);
+    return info;
 
-    console.log(`✅ Email sent successfully to: ${to}`);
-    return response;
-  } catch (error) {
-    console.error("❌ Email send failed:");
-    console.error(error?.response?.body || error.message || error);
-    throw error;
+  } catch (err) {
+    console.error("❌ Email Error (Nodemailer):", err.message);
+    throw err; 
   }
 };

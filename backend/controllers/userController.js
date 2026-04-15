@@ -2,10 +2,10 @@ import userModel from "../models/userModel.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { sendEmail } from "../config/brevo.js"; // ✅ Brevo email utility
+import { sendEmail } from "../config/brevo.js";
 
 const COOKIE_NAME = "token";
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 // ===================== COOKIE OPTIONS =====================
 const getCookieOptions = () => ({
@@ -17,49 +17,57 @@ const getCookieOptions = () => ({
 
 // ===================== CREATE TOKEN =====================
 const createToken = (user) => {
-  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 // ===================== REGISTER =====================
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
-  if (!name || !email || !password)
+  if (!name || !email || !password) {
     return res.json({ success: false, message: "Missing details" });
+  }
 
   try {
-    if (!validator.isEmail(email))
+    if (!validator.isEmail(email)) {
       return res.json({ success: false, message: "Invalid email" });
+    }
 
-    if (password.length < 8)
+    if (password.length < 8) {
       return res.json({
         success: false,
         message: "Password must be at least 8 characters",
       });
+    }
 
     const exists = await userModel.findOne({ email });
-    if (exists)
+    if (exists) {
       return res.json({ success: false, message: "User already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await userModel.create({ name, email, password: hashedPassword });
+    const user = await userModel.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
 
     const token = createToken(user);
     res.cookie(COOKIE_NAME, token, getCookieOptions());
 
-    // ✅ Send welcome email
+    // ✅ Send welcome email (Fixed HTML String)
     try {
       await sendEmail(
         email,
-        "Welcome to Forever 🎉",
-        `
-        <div style="font-family: Arial, sans-serif;">
+        "Welcome to Expense Tracker 🎉",
+        `<div style="font-family: Arial, sans-serif;">
           <h2 style="color: #4CAF50;">Welcome, ${name}!</h2>
           <p>Your account has been created successfully.</p>
           <p><b>Email:</b> ${email}</p>
-          <p>Enjoy tracking your income and expenses with Forever!</p>
-        </div>
-        `
+          <p>Start tracking your expenses now 🚀</p>
+        </div>`
       );
     } catch (mailError) {
       console.error("⚠️ Failed to send welcome email:", mailError.message);
@@ -80,17 +88,20 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password)
+  if (!email || !password) {
     return res.json({ success: false, message: "Missing details" });
+  }
 
   try {
     const user = await userModel.findOne({ email });
-    if (!user)
+    if (!user) {
       return res.status(401).json({ success: false, message: "User not found" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid password" });
+    }
 
     const token = createToken(user);
     res.cookie(COOKIE_NAME, token, getCookieOptions());
@@ -107,8 +118,10 @@ export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user?.id || req.body.userId;
     const user = await userModel.findById(userId).select("-password");
-    if (!user)
+
+    if (!user) {
       return res.json({ success: false, message: "User not found" });
+    }
 
     res.json({ success: true, user });
   } catch (error) {
@@ -132,35 +145,38 @@ export const logoutUser = async (req, res) => {
 export const sendResetOtp = async (req, res) => {
   const { email } = req.body;
 
-  if (!email)
+  if (!email) {
     return res.json({ success: false, message: "Email required" });
+  }
 
   try {
     const user = await userModel.findOne({ email });
-    if (!user)
+    if (!user) {
       return res.json({ success: false, message: "User not found" });
+    }
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
+
     user.resetOtp = otp;
-    user.resetOtpExpireAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetOtpExpireAt = Date.now() + 10 * 60 * 1000;
     await user.save();
 
     console.log("📨 Sending OTP to:", user.email);
 
     try {
+      // ✅ Fixed HTML String for OTP email
       await sendEmail(
         user.email,
         "Password Reset OTP",
-        `
-        <div style="font-family: Arial; line-height: 1.5;">
-          <h3>Your OTP Code</h3>
-          <p>Use the code below to reset your password:</p>
-          <h2>${otp}</h2>
-          <p>Expires in 10 minutes.</p>
-        </div>
-        `
+        `<div style="font-family: Arial;">
+          <h2>Password Reset OTP</h2>
+          <p>Your OTP is:</p>
+          <h1 style="letter-spacing: 5px;">${otp}</h1>
+          <p>This OTP expires in 10 minutes.</p>
+        </div>`
       );
-      console.log("✅ OTP email sent successfully to:", user.email);
+
+      console.log("✅ OTP email sent");
     } catch (mailError) {
       console.error("⚠️ Failed to send OTP email:", mailError.message);
       return res.json({ success: false, message: "Failed to send OTP email" });
@@ -177,22 +193,29 @@ export const sendResetOtp = async (req, res) => {
 export const resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
-  if (!email || !otp || !newPassword)
+  if (!email || !otp || !newPassword) {
     return res.json({ success: false, message: "Missing details" });
+  }
 
   try {
     const user = await userModel.findOne({ email });
-    if (!user) return res.json({ success: false, message: "User not found" });
 
-    if (user.resetOtp !== otp)
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    if (user.resetOtp !== otp) {
       return res.json({ success: false, message: "Invalid OTP" });
+    }
 
-    if (user.resetOtpExpireAt < Date.now())
+    if (user.resetOtpExpireAt < Date.now()) {
       return res.json({ success: false, message: "OTP expired" });
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetOtp = "";
     user.resetOtpExpireAt = 0;
+
     await user.save();
 
     res.json({ success: true, message: "Password reset successfully" });
@@ -206,10 +229,14 @@ export const resetPassword = async (req, res) => {
 export const uploadAvatar = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
     }
 
     const userId = req.user.id;
+
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
     const fullAvatarUrl = `${req.protocol}://${req.get("host")}${avatarPath}`;
 
@@ -218,7 +245,10 @@ export const uploadAvatar = async (req, res) => {
       .select("-password");
 
     if (!updatedUser) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     res.json({
@@ -229,6 +259,9 @@ export const uploadAvatar = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Avatar upload error:", error);
-    res.status(500).json({ success: false, message: "Failed to upload avatar" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload avatar",
+    });
   }
 };
