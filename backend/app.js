@@ -16,54 +16,54 @@ dotenv.config();
 const app = express();
 
 /** =====================
- * PORT CONFIG
+ * PORT
  * ===================== */
 const PORT = process.env.PORT || 5000;
 
 /** =====================
- * __dirname (ES Modules)
+ * __dirname fix (ES Modules)
  * ===================== */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /** =====================
- * CORS CONFIG (FIXED)
+ * CORS (FIXED FOR VERCEL + RENDER)
  * ===================== */
 const allowedOrigins = [
-  "https://finance-tracker1-tau.vercel.app",
-  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+  "http://localhost:5173"
 ];
 
-const corsOptions = {
+app.use(cors({
   origin: function (origin, callback) {
-    // allow server-to-server or mobile apps (no origin)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    console.log("❌ CORS Blocked:", origin);
-    return callback(new Error("Not allowed by CORS"));
+    console.log("❌ CORS blocked:", origin);
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
+app.options("*", cors());
 /** =====================
  * GLOBAL MIDDLEWARE
  * ===================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/** =====================
+ * STATIC FILES
+ * ===================== */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /** =====================
- * FILE UPLOAD SETUP
+ * FILE UPLOAD (MULTER)
  * ===================== */
 const uploadDir = path.join(__dirname, "uploads/avatars");
 
@@ -121,7 +121,7 @@ app.get("/", (req, res) => {
 });
 
 /** =====================
- * SERVER START
+ * START SERVER
  * ===================== */
 const startServer = async () => {
   try {
