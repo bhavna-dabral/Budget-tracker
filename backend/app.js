@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -11,37 +11,40 @@ import multer from "multer";
 import { uploadAvatar } from "./controllers/userController.js";
 import authUser from "./middleware/authUser.js";
 
-// Initialize dotenv for safety (though 'dotenv/config' handles it)
 dotenv.config();
 
 const app = express();
 
-/** * PORT CONFIGURATION
- * Render provides the port via process.env.PORT. 
- * We fallback to 5000 for local development.
- */
+/** =====================
+ * PORT CONFIG
+ * ===================== */
 const PORT = process.env.PORT || 5000;
 
-// Resolve __dirname for ES Modules
+/** =====================
+ * __dirname (ES Modules)
+ * ===================== */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ===================== Security & CORS =====================
-// ===================== Security & CORS =====================
+/** =====================
+ * CORS CONFIG (FIXED)
+ * ===================== */
 const allowedOrigins = [
-  "https://budget-tracker-3rch.vercel.app",
-  "https://budget-tracker-3rch-ohv255xq9-bhavnas-projects-2e67d94c.vercel.app", // ADD THIS EXACT ONE FROM SCREENSHOT 465
+  "https://finance-tracker1-tau.vercel.app",
   "http://localhost:5173",
 ];
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps) or if it's in our allowed list
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("❌ CORS Blocked for origin:", origin);
-      callback(new Error("Not allowed by CORS"));
+    // allow server-to-server or mobile apps (no origin)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    console.log("❌ CORS Blocked:", origin);
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -49,15 +52,21 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Essential for the "Preflight" requests seen in your console// Handle pre-flight requests
+app.options("*", cors(corsOptions));
 
-// ===================== Global Middleware =====================
+/** =====================
+ * GLOBAL MIDDLEWARE
+ * ===================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ===================== File Upload Setup =====================
+/** =====================
+ * FILE UPLOAD SETUP
+ * ===================== */
 const uploadDir = path.join(__dirname, "uploads/avatars");
+
 if (!existsSync(uploadDir)) {
   mkdirSync(uploadDir, { recursive: true });
 }
@@ -71,52 +80,63 @@ const storage = multer.diskStorage({
     cb(null, `${uniqueSuffix}-${file.originalname}`);
   },
 });
+
 const upload = multer({ storage });
 
-// ===================== Routes =====================
-
-// Explicitly defined routes
+/** =====================
+ * ROUTES
+ * ===================== */
 app.use("/api/user", userRouter);
-app.post("/api/user/upload-avatar", authUser, upload.single("avatar"), uploadAvatar);
 
-// Auto-load other route files from the /routes directory
+app.post(
+  "/api/user/upload-avatar",
+  authUser,
+  upload.single("avatar"),
+  uploadAvatar
+);
+
+/** =====================
+ * AUTO ROUTE LOADER
+ * ===================== */
 const routesDir = path.join(__dirname, "routes");
+
 if (existsSync(routesDir)) {
   const files = readdirSync(routesDir);
+
   for (const file of files) {
-    // Avoid re-importing userRoutes.js since it's already used above
     if (!file.endsWith(".js") || file === "userRoutes.js") continue;
-    
-    const routePath = `./routes/${file}`;
-    const routeModule = await import(routePath);
+
+    const routeModule = await import(`./routes/${file}`);
     const router = routeModule.default || routeModule;
+
     app.use("/api/v1", router);
   }
 }
 
-// Health Check
+/** =====================
+ * HEALTH CHECK
+ * ===================== */
 app.get("/", (req, res) => {
   res.send("🚀 Expense Tracker API is running successfully!");
 });
 
-// ===================== Server Execution =====================
+/** =====================
+ * SERVER START
+ * ===================== */
 const startServer = async () => {
   try {
-    // 1. Connect to Database first
     await db();
-    
-    // 2. Start listening only after DB connection is successful
+
     app.listen(PORT, () => {
-      console.log(`✅ Server is live on port ${PORT}`);
-      console.log(`🌐 Accepting requests from: ${allowedOrigins.join(", ")}`);
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`🌐 Allowed origins: ${allowedOrigins.join(", ")}`);
     });
   } catch (err) {
-    console.error("❌ Database connection failed. Server not started:", err);
+    console.error("❌ DB connection failed:", err);
     process.exit(1);
   }
 };
 
-// Protect against running server during automated tests
 if (process.env.NODE_ENV !== "test") {
   startServer();
 }
