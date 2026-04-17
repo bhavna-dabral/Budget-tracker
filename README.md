@@ -15,7 +15,14 @@ Track your **income**, **expenses**, **balance**, visualize spending trends with
 
 ## 📸 Preview
 
-<img width="1879" height="935" alt="Expense Tracker Dashboard" src="https://github.com/user-attachments/assets/3d8ee860-7f35-4d1f-935d-d9188ad874d2" />
+<img width="1860" height="913" alt="Budget1" src="https://github.com/user-attachments/assets/63e7edb2-0c20-4779-aec9-a63a9cb026ef" />
+<img width="1906" height="886" alt="Budget2" src="https://github.com/user-attachments/assets/3a48375d-22e6-4a17-980a-193227aab4cd" />
+<img width="1832" height="901" alt="Budget3" src="https://github.com/user-attachments/assets/8995fb54-7394-4893-9a7c-88bbf3b4829a" />
+<img width="1871" height="872" alt="BudgetTracker4" src="https://github.com/user-attachments/assets/02c85c4d-ab7b-41ea-9450-43761bc5f158" />
+
+
+
+
 
 ---
 
