@@ -35,12 +35,21 @@ export const addIncome = async (req, res) => {
 // ✅ Get Incomes (only for logged-in user)
 export const getIncomes = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const incomes = await Income.find({ userId }).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, incomes });
+    const incomes = await Income.find({
+      userId: req.user.id
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      incomes
+    });
+
   } catch (error) {
     console.error("Get incomes error:", error);
-    res.status(500).json({ message: "Server Error" });
+
+    res.status(500).json({
+      message: "Server Error"
+    });
   }
 };
 
@@ -48,17 +57,37 @@ export const getIncomes = async (req, res) => {
 export const deleteIncome = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
 
-    const income = await Income.findOneAndDelete({ _id: id, userId });
+    const income = await Income.findById(id);
 
     if (!income) {
-      return res.status(404).json({ message: "Income not found or unauthorized" });
+      return res.status(404).json({
+        success: false,
+        message: "Income not found",
+      });
     }
 
-    res.status(200).json({ success: true, message: "Income deleted successfully" });
+    // Check ownership
+    if (income.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    await Income.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Income deleted successfully",
+    });
+
   } catch (error) {
     console.error("Delete income error:", error);
-    res.status(500).json({ message: "Server Error" });
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
   }
 };
