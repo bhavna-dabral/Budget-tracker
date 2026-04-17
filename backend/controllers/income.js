@@ -53,7 +53,6 @@ export const getIncomes = async (req, res) => {
   }
 };
 
-// ✅ Delete Income (only if belongs to logged-in user)
 export const deleteIncome = async (req, res) => {
   try {
     const { id } = req.params;
@@ -67,14 +66,6 @@ export const deleteIncome = async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (income.userId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-
     await Income.findByIdAndDelete(id);
 
     res.status(200).json({
@@ -83,7 +74,7 @@ export const deleteIncome = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Delete income error:", error);
+    console.error(error);
 
     res.status(500).json({
       success: false,
