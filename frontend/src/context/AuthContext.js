@@ -3,34 +3,51 @@ import React, { createContext, useState, useEffect } from "react";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // ✅ safer init (avoids undefined / hydration issues)
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(
+    localStorage.getItem("token") || null
+  );
 
-  // ✅ load token AFTER mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
 
-  // ✅ sync token → localStorage
+  // Login Function
+  const login = ({ token, user }) => {
+    setToken(token);
+    setUser(user);
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+  };
+
+  // Logout Function
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  };
+
   useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-    } else {
+    if (!token) {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
   }, [token]);
 
-  // logout
-  const logout = () => {
-    setToken(null);
-    localStorage.removeItem("token");
-  };
-
   return (
-    <AuthContext.Provider value={{ token, setToken, logout }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        user,
+        login,
+        logout,
+        setToken,
+        setUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -166,15 +166,17 @@ export const sendResetOtp = async (req, res) => {
     try {
       // ✅ Fixed HTML String for OTP email
       await sendEmail(
-        user.email,
-        "Password Reset OTP",
-        `<div style="font-family: Arial;">
-          <h2>Password Reset OTP</h2>
-          <p>Your OTP is:</p>
-          <h1 style="letter-spacing: 5px;">${otp}</h1>
-          <p>This OTP expires in 10 minutes.</p>
-        </div>`
-      );
+  user.email,
+  "🔐 Your Budget Tracker OTP",
+  `
+  <div style="font-family:Arial;padding:20px">
+    <h2>Reset Your Password</h2>
+    <p>Your OTP is:</p>
+    <h1 style="color:#6C63FF">${otp}</h1>
+    <p>This OTP expires in 10 minutes.</p>
+  </div>
+  `
+);
 
       console.log("✅ OTP email sent");
     } catch (mailError) {

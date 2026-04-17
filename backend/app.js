@@ -30,20 +30,24 @@ const __dirname = path.dirname(__filename);
  * CORS (FIXED FOR VERCEL + RENDER)
  * ===================== */
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "http://localhost:5173"
-];
+  process.env.FRONTEND_URL,      // For Vercel (set this in Render Dashboard)
+  "http://localhost:3000",       // For Create-React-App
+  "http://localhost:5173",       // For Vite
+  "http://127.0.0.1:3000"        // Alternate local address
+].filter(Boolean);               // Removes undefined values This removes undefined values if FRONTEND_URL isn't set
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
+    } else {
+      console.log("❌ CORS blocked for origin:", origin);
+      console.log("✅ Allowed origins are:", allowedOrigins);
+      return callback(new Error('Not allowed by CORS'));
     }
-
-    console.log("❌ CORS blocked:", origin);
-    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -98,6 +102,12 @@ app.post(
 /** =====================
  * AUTO ROUTE LOADER
  * ===================== */
+/** =====================
+ * AUTO ROUTE LOADER
+ * ===================== */
+/** =====================
+ * AUTO ROUTE LOADER (FIXED FOR LOCAL)
+ * ===================== */
 const routesDir = path.join(__dirname, "routes");
 
 if (existsSync(routesDir)) {
@@ -106,10 +116,21 @@ if (existsSync(routesDir)) {
   for (const file of files) {
     if (!file.endsWith(".js") || file === "userRoutes.js") continue;
 
-    const routeModule = await import(`./routes/${file}`);
-    const router = routeModule.default || routeModule;
+    try {
+      // Use pathToFileURL to ensure Windows compatibility (converts path to file:///...)
+      const { pathToFileURL } = await import("url");
+      const filePath = pathToFileURL(path.join(routesDir, file)).href;
+      
+      const routeModule = await import(filePath);
+      const router = routeModule.default || routeModule;
 
-    app.use("/api/v1", router);
+      if (router) {
+        app.use("/api/v1", router);
+        console.log(`✅ Loaded route: ${file}`);
+      }
+    } catch (err) {
+      console.error(`❌ Failed to load route ${file}:`, err.message);
+    }
   }
 }
 

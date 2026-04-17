@@ -1,138 +1,63 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { Bar } from "react-chartjs-2";
-import { useGlobalContext } from "../context/globalContext";
+import { useGlobalContext } from "../../context/globalContext";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import Loader from "../Loader";
 
-/* ---------------- SAFE DATE PARSER ---------------- */
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend,
+  Filler
+} from "chart.js";
 
-const parseDate = (d) => {
-  if (!d) return null;
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend,
+  Filler
+);
 
-  if (d instanceof Date) {
-    return isNaN(d.getTime()) ? null : d;
+function Chart() {
+  const { incomes, expenses } = useGlobalContext();
+
+  const safeIncomes = Array.isArray(incomes) ? incomes : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
+  const analytics = useAnalytics(safeIncomes, safeExpenses);
+  const [view, setView] = useState("monthly");
+
+  if (safeIncomes.length === 0 && safeExpenses.length === 0) {
+    return <Loader />;
   }
 
-  if (typeof d === "string" && /^\d{1,2}-\d{1,2}-\d{4}$/.test(d.trim())) {
-    const [dd, mm, yyyy] = d.trim().split("-").map(Number);
-    const date = new Date(yyyy, mm - 1, dd);
-    return isNaN(date.getTime()) ? null : date;
-  }
-
-  const parsed = new Date(d);
-  return isNaN(parsed.getTime()) ? null : parsed;
-};
-
-function AnalyticsChart() {
-  const { incomes = [], expenses = [] } = useGlobalContext();
-
-  const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
-  ];
-
-  /* ---------------- AVAILABLE YEARS ---------------- */
-
-  const availableYears = useMemo(() => {
-    const years = new Set();
-
-    [...incomes, ...expenses].forEach((it) => {
-      const dt = parseDate(it.date);
-      if (dt) years.add(dt.getFullYear());
-    });
-
-    if (years.size === 0) years.add(new Date().getFullYear());
-
-    return Array.from(years).sort((a, b) => b - a);
-  }, [incomes, expenses]);
-
-  /* ---------------- SAFE STATE INIT ---------------- */
-
-  const [selectedYear, setSelectedYear] = useState(
-    () => availableYears[0] || new Date().getFullYear()
-  );
-
-  useEffect(() => {
-    if (!availableYears.includes(selectedYear)) {
-      setSelectedYear(availableYears[0] || new Date().getFullYear());
-    }
-  }, [availableYears, selectedYear]);
-
-  /* ---------------- MONTHLY SUMS ---------------- */
-
-  const monthlySums = (items, year) => {
-    const arr = Array(12).fill(0);
-
-    items.forEach((it) => {
-      const dt = parseDate(it.date);
-
-      if (dt && dt.getFullYear() === year) {
-        arr[dt.getMonth()] += Number(it.amount || 0);
-      }
-    });
-
-    return arr;
+  /* ---------------- CHART OPTIONS (FIX MOBILE) ---------------- */
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false, // ⭐ IMPORTANT
+    plugins: {
+      legend: { position: "top" }
+    },
   };
 
-  /* ---------------- DERIVED DATA ---------------- */
-
-  const derived = useMemo(() => {
-    const monthlyIncome = monthlySums(incomes, selectedYear);
-    const monthlyExpense = monthlySums(expenses, selectedYear);
-
-    const totalIncomeYear = monthlyIncome.reduce((a, b) => a + b, 0);
-    const totalExpenseYear = monthlyExpense.reduce((a, b) => a + b, 0);
-    const totalSavingsYear = totalIncomeYear - totalExpenseYear;
-
-    const overspentMonths = months.filter(
-      (_, i) => monthlyExpense[i] > monthlyIncome[i]
-    );
-
-    let lastMonthIndex = -1;
-
-    for (let i = 11; i >= 0; i--) {
-      if (monthlyIncome[i] + monthlyExpense[i] > 0) {
-        lastMonthIndex = i;
-        break;
-      }
-    }
-
-    let monthlyWarning = null;
-
-    if (lastMonthIndex > 0) {
-      const lastExp = monthlyExpense[lastMonthIndex];
-      const prevExp = monthlyExpense[lastMonthIndex - 1];
-
-      if (prevExp > 0 && lastExp > prevExp) {
-        const pct = ((lastExp - prevExp) / prevExp) * 100;
-
-        monthlyWarning = {
-          month: months[lastMonthIndex],
-          prevMonth: months[lastMonthIndex - 1],
-          pct: pct.toFixed(1),
-        };
-      }
-    }
-
-    return {
-      monthlyIncome,
-      monthlyExpense,
-      totalIncomeYear,
-      totalExpenseYear,
-      totalSavingsYear,
-      overspentMonths,
-      monthlyWarning,
-    };
-  }, [incomes, expenses, selectedYear]);
-
-  /* ---------------- CHART DATA ---------------- */
-
-  const data = {
-    labels: months,
+  /* ---------------- DATA ---------------- */
+  const monthlyData = {
+    labels: analytics.months,
     datasets: [
       {
         type: "line",
         label: "Income",
-        data: derived.monthlyIncome,
+        data: analytics.monthlyIncome,
         borderColor: "#00e676",
         backgroundColor: "rgba(0,230,118,0.1)",
         fill: true,
@@ -141,96 +66,171 @@ function AnalyticsChart() {
       {
         type: "bar",
         label: "Expense",
-        data: derived.monthlyExpense,
+        data: analytics.monthlyExpense,
         backgroundColor: "#ff6b6b",
-        borderRadius: 5,
+        borderRadius: 6,
       },
     ],
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (v) => `₹${v}`,
-        },
+  const yearlyData = {
+    labels: analytics.yearlyData.map((d) => d.year),
+    datasets: [
+      {
+        label: "Income",
+        data: analytics.yearlyData.map((d) => d.income),
+        backgroundColor: "#00e676",
       },
-    },
+      {
+        label: "Expense",
+        data: analytics.yearlyData.map((d) => d.expense),
+        backgroundColor: "#ff6b6b",
+      },
+    ],
   };
 
   return (
-    <ChartWrap>
-      <Header>
-        <div>
-          <h2>Analytics</h2>
-          <p>Monthly Summary for {selectedYear}</p>
-        </div>
-
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(Number(e.target.value))}
+    <ChartWrapper>
+      {/* Toggle */}
+      <div className="toggle">
+        <button
+          onClick={() => setView("monthly")}
+          className={view === "monthly" ? "active" : ""}
         >
-          {availableYears.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </Header>
+          Monthly
+        </button>
+        <button
+          onClick={() => setView("yearly")}
+          className={view === "yearly" ? "active" : ""}
+        >
+          Yearly
+        </button>
+      </div>
 
-      <ChartBox>
-        <Bar data={data} options={options} />
-      </ChartBox>
+      {/* Chart */}
+      <div className="chart-container">
+        <Bar
+          data={view === "monthly" ? monthlyData : yearlyData}
+          options={options}
+        />
+      </div>
 
-      <Stats>
-        <p>Income: ₹{derived.totalIncomeYear.toLocaleString()}</p>
-        <p>Expense: ₹{derived.totalExpenseYear.toLocaleString()}</p>
-        <p>Balance: ₹{derived.totalSavingsYear.toLocaleString()}</p>
-      </Stats>
+      {/* Budget */}
+      <div className="budget">
+        <p>Budget Usage</p>
+        <div className="bar">
+          <div
+            className="fill"
+            style={{
+              width: `${Math.min(analytics.budgetUsed || 0, 100)}%`,
+            }}
+          />
+        </div>
+        <span>{(analytics.budgetUsed || 0).toFixed(1)}%</span>
+      </div>
 
-      <Warnings>
-        {derived.monthlyWarning ? (
-          <div>⚠ {derived.monthlyWarning.month} expenses increased</div>
+      {/* Prediction */}
+      <p className="prediction">
+        📉 Next month prediction: ₹{Math.round(analytics.prediction || 0)}
+      </p>
+
+      {/* Insights */}
+      <div className="insights">
+        <h3>🧠 Smart Insights</h3>
+
+        {analytics.monthlyWarning && (
+          <p className="warning">
+            ⚠ {analytics.monthlyWarning.month} increased by{" "}
+            {analytics.monthlyWarning.pct}%
+          </p>
+        )}
+
+        {analytics.overspentMonths?.length > 0 && (
+          <p className="danger">
+            💸 Overspent in: {analytics.overspentMonths.join(", ")}
+          </p>
+        )}
+
+        {analytics.yearlyChange && (
+          <p className="info">
+            📊 Yearly change: {analytics.yearlyChange}%
+          </p>
+        )}
+
+        {/* ⭐ FIX: fallback if empty */}
+        {analytics.insights?.length > 0 ? (
+          analytics.insights.map((text, i) => <p key={i}>• {text}</p>)
         ) : (
-          <div>✅ Spending is stable</div>
+          <p>• No insights yet. Add more data.</p>
         )}
-
-        {derived.overspentMonths.length > 0 && (
-          <div>💸 Overspent: {derived.overspentMonths.join(", ")}</div>
-        )}
-      </Warnings>
-    </ChartWrap>
+      </div>
+    </ChartWrapper>
   );
 }
 
 /* ---------------- STYLES ---------------- */
-
-const ChartWrap = styled.div`
-  background: #212431;
+const ChartWrapper = styled.div`
   padding: 1rem;
-  border-radius: 20px;
-  color: white;
+
+  .chart-container {
+    height: 300px;
+  }
+
+  @media (max-width: 768px) {
+    .chart-container {
+      height: 220px; /* ⭐ mobile fix */
+    }
+  }
+
+  .toggle {
+    margin-bottom: 1rem;
+
+    button {
+      margin-right: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #eee;
+
+      &.active {
+        background: #6c63ff;
+        color: white;
+      }
+    }
+  }
+
+  .budget {
+    margin-top: 1rem;
+
+    .bar {
+      height: 10px;
+      background: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(to right, #00e676, #ff6b6b);
+    }
+  }
+
+  .prediction {
+    margin-top: 1rem;
+    font-weight: 500;
+  }
+
+  .insights {
+    margin-top: 1.5rem;
+    background: #f8f9ff;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .warning { color: orange; }
+  .danger { color: red; }
+  .info { color: #4dabf7; }
 `;
 
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-`;
-
-const ChartBox = styled.div`
-  height: 300px;
-`;
-
-const Stats = styled.div`
-  margin-top: 1rem;
-`;
-
-const Warnings = styled.div`
-  margin-top: 1rem;
-`;
-
-export default AnalyticsChart;
+export default Chart;

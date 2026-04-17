@@ -8,154 +8,194 @@ import { plus } from '../../utils/Icons';
 
 function ExpenseForm() {
     const { addExpense, error, setError, totalIncome, totalExpenses } = useGlobalContext();
+
     const [inputState, setInputState] = useState({
         title: '',
         amount: '',
-        date: '',
+        date: null,
         category: '',
         description: '',
     });
 
     const { title, amount, date, category, description } = inputState;
 
-    // --- FIX FOR THE ESLINT ERROR ---
-    // 1. Extract values to simple variables outside the hook
-    const incomeTotal = totalIncome();
-    const expenseTotal = totalExpenses();
+    // ✅ FIX: use as VALUES (not functions)
+    const incomeTotal = totalIncome;
+    const expenseTotal = totalExpenses;
 
+    // ⚠️ Warning logic
     useEffect(() => {
-        // 2. This logic now only runs when the ACTUAL numbers change
         if (expenseTotal > incomeTotal && incomeTotal > 0) {
             setError("Warning: Total expenses exceed your total income!");
-        } else {
-            // Optional: clear warning if balance is okay
-            // setError(null); 
         }
-        
-        // 3. Dependency array is now "stable" and includes all required functions/values
-    }, [incomeTotal, expenseTotal, totalIncome, totalExpenses, setError]);
+    }, [incomeTotal, expenseTotal, setError]);
 
-    const handleInput = name => e => {
-        setInputState({...inputState, [name]: e.target.value});
-        setError(null);
+    const handleInput = (name) => (e) => {
+        setInputState({ ...inputState, [name]: e.target.value });
+        setError("");
     };
 
-    const handleSubmit = e => {
+    const handleSubmit = (e) => {
         e.preventDefault();
+
+        if (!title || !amount || !date || !category) {
+            setError("Please fill all required fields.");
+            return;
+        }
+
         addExpense(inputState);
+
         setInputState({
             title: '',
             amount: '',
-            date: '',
+            date: null,
             category: '',
             description: '',
         });
     };
 
     return (
-        <ExpenseFormStyled onSubmit={handleSubmit}>
-            {error && <p className='error'>{error}</p>}
-            <div className="input-control">
-                <input 
-                    type="text" 
-                    value={title}
-                    name={'title'} 
-                    placeholder="Expense Title"
-                    onChange={handleInput('title')}
-                />
+        <FormContainer>
+            <div className="form-card">
+                <h2>Add Expense</h2>
+
+                {error && <p className="error-box">{error}</p>}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="input-group">
+                        <label>Expense Title</label>
+                        <input
+                            type="text"
+                            value={title}
+                            placeholder="e.g. Groceries"
+                            onChange={handleInput("title")}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Amount</label>
+                        <input
+                            type="number"
+                            value={amount}
+                            placeholder="Enter amount"
+                            onChange={handleInput("amount")}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Date</label>
+                        <DatePicker
+                            selected={date}
+                            dateFormat="dd-MM-yyyy"
+                            placeholderText="Choose date"
+                            onChange={(date) => setInputState({ ...inputState, date })}
+                            className="date-picker"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Category</label>
+                        <select value={category} onChange={handleInput("category")}>
+                            <option value="" disabled>Select Category</option>
+                            <option value="education">Education</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="health">Health</option>
+                            <option value="subscriptions">Subscriptions</option>
+                            <option value="takeaways">Takeaways</option>
+                            <option value="clothing">Clothing</option>
+                            <option value="travelling">Travelling</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div className="input-group">
+                        <label>Description</label>
+                        <textarea
+                            value={description}
+                            placeholder="Add a note..."
+                            rows="3"
+                            onChange={handleInput("description")}
+                        />
+                    </div>
+
+                    <Button
+                        name="Add Expense"
+                        icon={plus}
+                        bPad=".9rem 0"
+                        bRad="12px"
+                        bg="#6C63FF"
+                        color="#fff"
+                        type="submit"
+                    />
+                </form>
             </div>
-            <div className="input-control">
-                <input 
-                    value={amount}  
-                    type="text" 
-                    name={'amount'} 
-                    placeholder={'Expense Amount'}
-                    onChange={handleInput('amount')} 
-                />
-            </div>
-            <div className="input-control">
-                <DatePicker 
-                    id='date'
-                    placeholderText='Enter A Date'
-                    selected={date}
-                    dateFormat="dd/MM/yyyy"
-                    onChange={(date) => {
-                        setInputState({...inputState, date: date});
-                    }}
-                />
-            </div>
-            <div className="selects input-control">
-                <select required value={category} name="category" id="category" onChange={handleInput('category')}>
-                    <option value="" disabled >Select Option</option>
-                    <option value="education">Education</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="health">Health</option>
-                    <option value="subscriptions">Subscriptions</option>
-                    <option value="takeaways">Takeaways</option>
-                    <option value="clothing">Clothing</option>  
-                    <option value="travelling">Travelling</option>  
-                    <option value="other">Other</option>  
-                </select>
-            </div>
-            <div className="input-control">
-                <textarea name="description" value={description} placeholder='Add A Reference' id="description" cols="30" rows="4" onChange={handleInput('description')}></textarea>
-            </div>
-            <div className="submit-btn">
-                <Button 
-                    name={'Add Expense'}
-                    icon={plus}
-                    bPad={'.8rem 1.6rem'}
-                    bRad={'30px'}
-                    bg={'var(--color-accent'}
-                    color={'#fff'}
-                />
-            </div>
-        </ExpenseFormStyled>
+        </FormContainer>
     );
 }
 
-const ExpenseFormStyled = styled.form`
+const FormContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+
+  .form-card {
+    width: 100%;
+    max-width: 520px;
+    padding: 2rem;
+    background: #11121c;
+    border-radius: 18px;
+    box-shadow: 0 0 25px rgba(108, 99, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    h2 {
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+      font-size: 1.7rem;
+      font-weight: 700;
+    }
+  }
+
+  .error-box {
+    background: rgba(255, 82, 82, 0.15);
+    border-left: 4px solid #ff5252;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #ff5252;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+
+  form {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    input, textarea, select {
-        font-family: inherit;
-        font-size: inherit;
-        outline: none;
-        border: none;
-        padding: .5rem 1rem;
-        border-radius: 5px;
-        border: 2px solid #fff;
-        background: transparent;
-        resize: none;
-        box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
-        color: rgba(34, 34, 96, 0.9);
-        &::placeholder {
-            color: rgba(34, 34, 96, 0.4);
-        }
+    gap: 1rem;
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+
+      label {
+        color: #b8b8d4;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      input, select, textarea {
+        padding: 0.7rem 1rem;
+        border-radius: 12px;
+        background: #181a27;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #e4e4f0;
+        font-size: 1rem;
+      }
     }
-    .input-control {
-        input {
-            width: 100%;
-        }
-    }
-    .selects {
-        display: flex;
-        justify-content: flex-end;
-        select {
-            color: rgba(34, 34, 96, 0.4);
-            &:focus, &:active {
-                color: rgba(34, 34, 96, 1);
-            }
-        }
-    }
-    .submit-btn {
-        button {
-            &:hover {
-                background: var(--color-green) !important;
-            }
-        }
-    }
+  }
+
+  .date-picker {
+    width: 100%;
+  }
 `;
 
 export default ExpenseForm;

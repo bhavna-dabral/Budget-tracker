@@ -1,89 +1,123 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const backendUrl =process.env.REACT_APP_BACKEND_URL;
+  const { login } = useContext(AuthContext);
+
+  const backendUrl =
+    process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e) =>
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    try {
-      const { data } = await axios.post(`${backendUrl}/api/user/register`, {
-        name,
-        email,
-        password,
-      });
 
-      if (data.success) {
-        toast.success("Signup successful! Please log in.");
-        setTimeout(() => navigate("/login"), 1500);
+    try {
+      setLoading(true);
+
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/register`,
+        formData
+      );
+
+      // if backend gives token after signup
+      if (data.token) {
+        toast.success("Signup successful!");
+
+        login({
+          token: data.token,
+          user: data.user || {
+            name: formData.name,
+            email: formData.email,
+          },
+        });
+
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1200);
       } else {
-        toast.error(data.message);
+        toast.success("Signup successful! Please login.");
+
+        setTimeout(() => {
+          navigate("/login");
+        }, 1200);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Signup failed");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Signup failed"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+    <div className="signup-page">
       <ToastContainer position="top-right" autoClose={2000} />
+
       <form
         onSubmit={handleSignup}
-        className="flex flex-col gap-4 bg-white p-8 rounded-xl shadow-md w-[90%] sm:max-w-md"
+        className="signup-box"
       >
-        <h2 className="text-2xl font-semibold text-center mb-4">Create Account</h2>
+        <h2>Create Account</h2>
+        <p className="subtitle">
+          Join Budget Expense 🚀
+        </p>
 
         <input
           type="text"
+          name="name"
           placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2"
+          value={formData.name}
+          onChange={handleChange}
           required
         />
-        <br/>
-        <br/>
 
         <input
           type="email"
+          name="email"
           placeholder="Email Address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2"
+          value={formData.email}
+          onChange={handleChange}
           required
         />
-        <br/>
 
         <input
           type="password"
+          name="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2"
+          value={formData.password}
+          onChange={handleChange}
           required
         />
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          Sign Up
+        <button type="submit" disabled={loading}>
+          {loading ? "Please wait..." : "Sign Up"}
         </button>
 
-        <p className="text-sm text-center">
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            className="text-blue-600 cursor-pointer hover:underline"
-          >
-            Log in
+        <p className="bottom-text">
+          Already have account?{" "}
+          <span onClick={() => navigate("/login")}>
+            Login
           </span>
         </p>
       </form>

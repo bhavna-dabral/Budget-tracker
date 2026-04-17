@@ -154,3 +154,20 @@
     padding: 12px;
   }
 }
+.forgot-wrap {
+  text-align: right;
+  margin-top: -5px;
+  margin-bottom: 10px;
+}
+
+.forgot-link {
+  background: none;
+  border: none;
+  color: #6c63ff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}

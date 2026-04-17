@@ -1,24 +1,20 @@
-import React, { useContext, useState, useCallback, useMemo } from "react";
+import React, { useContext, useState, useCallback, useMemo, useEffect } from "react";
 import axios from "axios";
 
-/* ---------------- SAFE BASE URL ---------------- */
+const GlobalContext = React.createContext();
 
 const BASE_URL =
   (process.env.REACT_APP_BACKEND_URL
     ? process.env.REACT_APP_BACKEND_URL.replace(/\/$/, "")
-    : "http://localhost:5000") + "/api/v1";
-
-/* ---------------- CONTEXT ---------------- */
-
-const GlobalContext = React.createContext();
+    : "http://localhost:5000") + "/api";
 
 export const GlobalProvider = ({ children }) => {
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true); // ⭐ NEW
 
   /* ---------------- AXIOS INSTANCE ---------------- */
-
   const axiosInstance = useMemo(() => {
     const instance = axios.create({
       baseURL: BASE_URL,
@@ -38,7 +34,9 @@ export const GlobalProvider = ({ children }) => {
       (err) => {
         if (err.response?.status === 401) {
           localStorage.removeItem("token");
-          window.location.href = "/login";
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
         }
         return Promise.reject(err);
       }
@@ -47,91 +45,100 @@ export const GlobalProvider = ({ children }) => {
     return instance;
   }, []);
 
-  /* ---------------- INCOMES ---------------- */
+  /* ---------------- API CALLS ---------------- */
 
   const getIncomes = useCallback(async () => {
     try {
-      const { data } = await axiosInstance.get("/get-incomes");
+      const { data } = await axiosInstance.get("/v1/get-incomes");
       setIncomes(Array.isArray(data) ? data : data?.incomes || []);
     } catch (err) {
-      setError("Error fetching incomes");
-      setIncomes([]);
+      setError(err.response?.data?.message || "Error fetching incomes");
     }
   }, [axiosInstance]);
 
   const addIncome = async (income) => {
     try {
-      await axiosInstance.post("/add-income", {
+      await axiosInstance.post("/v1/add-income", {
         ...income,
         amount: Number(income.amount),
         date: new Date(income.date).toISOString(),
       });
-
       await getIncomes();
-    } catch {
-      setError("Error adding income");
+    } catch (err) {
+      setError(err.response?.data?.message || "Error adding income");
     }
   };
 
   const deleteIncome = async (id) => {
     try {
-      await axiosInstance.delete(`/delete-income/${id}`);
+      await axiosInstance.delete(`/v1/delete-income/${id}`);
       await getIncomes();
-    } catch {
-      setError("Error deleting income");
+    } catch (err) {
+      setError(err.response?.data?.message || "Error deleting income");
     }
   };
 
-  /* ---------------- EXPENSES ---------------- */
-
   const getExpenses = useCallback(async () => {
     try {
-      const { data } = await axiosInstance.get("/get-expenses");
+      const { data } = await axiosInstance.get("/v1/get-expenses");
       setExpenses(Array.isArray(data) ? data : data?.expenses || []);
-    } catch {
-      setError("Error fetching expenses");
-      setExpenses([]);
+    } catch (err) {
+      setError(err.response?.data?.message || "Error fetching expenses");
     }
   }, [axiosInstance]);
 
   const addExpense = async (expense) => {
     try {
-      await axiosInstance.post("/add-expense", {
+      await axiosInstance.post("/v1/add-expense", {
         ...expense,
         amount: Number(expense.amount),
         date: new Date(expense.date).toISOString(),
       });
-
       await getExpenses();
-    } catch {
-      setError("Error adding expense");
+    } catch (err) {
+      setError(err.response?.data?.message || "Error adding expense");
     }
   };
 
   const deleteExpense = async (id) => {
     try {
-      await axiosInstance.delete(`/delete-expense/${id}`);
+      await axiosInstance.delete(`/v1/delete-expense/${id}`);
       await getExpenses();
-    } catch {
-      setError("Error deleting expense");
+    } catch (err) {
+      setError(err.response?.data?.message || "Error deleting expense");
     }
   };
 
-  /* ---------------- SAFE CALCULATIONS ---------------- */
+  /* ---------------- AUTO FETCH (FIX FOR 0 VALUES) ---------------- */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await Promise.all([getIncomes(), getExpenses()]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const totalIncome = () =>
-    incomes.reduce((a, b) => a + Number(b.amount || 0), 0);
+    fetchData();
+  }, [getIncomes, getExpenses]);
 
-  const totalExpenses = () =>
-    expenses.reduce((a, b) => a + Number(b.amount || 0), 0);
+  /* ---------------- CALCULATIONS ---------------- */
 
-  const totalBalance = () => totalIncome() - totalExpenses();
+  const totalIncome = incomes.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+
+  const totalExpenses = expenses.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+
+  const totalBalance = totalIncome - totalExpenses;
 
   const transactionHistory = () => {
     const history = [...incomes, ...expenses];
-
     return history
-      .filter((t) => t && t.createdAt)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 3);
   };
@@ -142,19 +149,27 @@ export const GlobalProvider = ({ children }) => {
     <GlobalContext.Provider
       value={{
         incomes,
-        addIncome,
-        getIncomes,
-        deleteIncome,
         expenses,
+
+        addIncome,
         addExpense,
+
+        getIncomes,
         getExpenses,
+
+        deleteIncome,
         deleteExpense,
+
         totalIncome,
         totalExpenses,
         totalBalance,
+
         transactionHistory,
+
         error,
         setError,
+
+        loading, // ⭐ useful for loader
       }}
     >
       {children}
@@ -162,4 +177,4 @@ export const GlobalProvider = ({ children }) => {
   );
 };
 
-export const useGlobalContext = () => useContext(GlobalContext);git add .
+export const useGlobalContext = () => useContext(GlobalContext);

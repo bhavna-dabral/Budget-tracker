@@ -6,8 +6,10 @@ import Form from '../Form/Form';
 import IncomeItem from '../IncomeItem/IncomeItem';
 
 function Income() {
+  // Destructure from Global Context
   const { incomes, getIncomes, deleteIncome, totalIncome } = useGlobalContext();
 
+  // Fetch incomes when component mounts
   useEffect(() => {
     getIncomes();
   }, [getIncomes]);
@@ -17,25 +19,36 @@ function Income() {
       <InnerLayout>
         <h1>Incomes</h1>
 
+        {/* ✅ FIXED: Removed the () from totalIncome. It is a value, not a function. */}
         <h2 className="total-income">
-          Total Income: <span>₹{totalIncome()}</span>
+          Total Income: <span>₹{totalIncome}</span>
         </h2>
 
         <div className="income-content">
           <div className="form-container">
+            {/* The form to add new income */}
             <Form />
           </div>
 
           <div className="incomes-list">
             {incomes.length > 0 ? (
-              incomes.map((income) => (
-                <IncomeItem
-                  key={income._id}
-                  {...income}
-                  indicatorColor="var(--color-green)"
-                  deleteItem={deleteIncome}
-                />
-              ))
+              incomes.map((income) => {
+                const { _id, title, amount, date, category, description, type } = income;
+                return (
+                  <IncomeItem
+                    key={_id}
+                    id={_id}
+                    title={title}
+                    description={description}
+                    amount={amount}
+                    date={date}
+                    type={type}
+                    category={category}
+                    indicatorColor="var(--color-green)"
+                    deleteItem={deleteIncome}
+                  />
+                );
+              })
             ) : (
               <p className="no-incomes">No incomes recorded yet.</p>
             )}
@@ -53,7 +66,8 @@ const IncomeStyled = styled.div`
   h1 {
     text-align: center;
     margin-bottom: 1rem;
-    font-size: clamp(1.5rem, 5vw, 2.5rem); // Responsive font size
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    color: #222260;
   }
 
   .total-income {
@@ -69,7 +83,7 @@ const IncomeStyled = styled.div`
     font-size: 1.5rem;
     gap: 0.5rem;
     span {
-      font-size: 2rem;
+      font-size: 2.5rem;
       font-weight: 800;
       color: var(--color-green);
     }
@@ -78,11 +92,8 @@ const IncomeStyled = styled.div`
   .income-content {
     display: flex;
     gap: 2rem;
-    
-    /* Mobile First: Stack vertically by default */
     flex-direction: column;
 
-    /* Tablet and Desktop: Side by side */
     @media screen and (min-width: 1024px) {
       flex-direction: row;
     }
@@ -101,7 +112,6 @@ const IncomeStyled = styled.div`
     }
   }
 
-  /* Responsive Adjustments for Mobile Devices */
   @media screen and (max-width: 768px) {
     .total-income {
       font-size: 1.2rem;
@@ -109,12 +119,7 @@ const IncomeStyled = styled.div`
         font-size: 1.5rem;
       }
     }
-    
-    .income-content {
-        gap: 1.5rem;
-    }
   }
 `;
-
 
 export default Income;
